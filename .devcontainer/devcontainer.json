@@ -1,0 +1,29 @@
+{
+  "name": "safebox",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/go:1.3.2": {
+      "version": "1.24"
+    },
+    "ghcr.io/devcontainers/features/git:1.3.4": {}
+  },
+
+  // "forwardPorts": [],
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "go mod tidy",
+
+  "workspaceFolder": "/workspace",
+
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go", "ms-azuretools.vscode-docker"]
+    },
+    "jetbrains": {
+      "backend": "GoLand"
+    }
+  },
+
+  "remoteUser": "root"
+}
