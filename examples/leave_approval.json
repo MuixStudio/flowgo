@@ -1,0 +1,207 @@
+{
+  "id": "leave-approval-process",
+  "name": "Leave Approval Process",
+  "description": "A simple leave approval workflow",
+  "version": 1,
+  "variables": {
+    "applicantName": "",
+    "leaveType": "",
+    "leaveDays": 0,
+    "startDate": "",
+    "endDate": "",
+    "reason": "",
+    "approved": false
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "startEvent",
+      "name": "Start Leave Application"
+    },
+    {
+      "id": "apply-leave",
+      "type": "userTask",
+      "name": "Submit Leave Application",
+      "properties": {
+        "assignee": "${applicant}",
+        "formKey": "leave-application-form",
+        "priority": 5
+      },
+      "outputMappings": {
+        "applicantName": "${form.applicantName}",
+        "leaveType": "${form.leaveType}",
+        "leaveDays": "${form.leaveDays}",
+        "startDate": "${form.startDate}",
+        "endDate": "${form.endDate}",
+        "reason": "${form.reason}"
+      }
+    },
+    {
+      "id": "check-days",
+      "type": "exclusiveGateway",
+      "name": "Check Leave Days",
+      "description": "Route based on number of leave days"
+    },
+    {
+      "id": "manager-approval",
+      "type": "userTask",
+      "name": "Manager Approval",
+      "properties": {
+        "candidateGroups": ["managers"],
+        "dueDate": "${now() + duration('P2D')}",
+        "priority": 8
+      },
+      "inputMappings": {
+        "applicant": "${applicantName}",
+        "days": "${leaveDays}",
+        "type": "${leaveType}"
+      },
+      "outputMappings": {
+        "managerApproved": "${approved}",
+        "managerComment": "${comment}"
+      }
+    },
+    {
+      "id": "hr-approval",
+      "type": "userTask",
+      "name": "HR Director Approval",
+      "properties": {
+        "candidateGroups": ["hr-directors"],
+        "dueDate": "${now() + duration('P3D')}",
+        "priority": 10
+      },
+      "inputMappings": {
+        "applicant": "${applicantName}",
+        "days": "${leaveDays}",
+        "type": "${leaveType}"
+      },
+      "outputMappings": {
+        "hrApproved": "${approved}",
+        "hrComment": "${comment}"
+      }
+    },
+    {
+      "id": "check-approval",
+      "type": "exclusiveGateway",
+      "name": "Check Approval Result"
+    },
+    {
+      "id": "notify-approval",
+      "type": "serviceTask",
+      "name": "Send Approval Notification",
+      "properties": {
+        "implementation": "notification.SendEmail",
+        "async": true
+      },
+      "inputMappings": {
+        "to": "${applicantEmail}",
+        "subject": "Leave Request Approved",
+        "template": "leave-approved"
+      }
+    },
+    {
+      "id": "notify-rejection",
+      "type": "serviceTask",
+      "name": "Send Rejection Notification",
+      "properties": {
+        "implementation": "notification.SendEmail",
+        "async": true
+      },
+      "inputMappings": {
+        "to": "${applicantEmail}",
+        "subject": "Leave Request Rejected",
+        "template": "leave-rejected"
+      }
+    },
+    {
+      "id": "update-calendar",
+      "type": "serviceTask",
+      "name": "Update Leave Calendar",
+      "properties": {
+        "implementation": "calendar.UpdateLeave",
+        "async": true,
+        "retries": 3
+      }
+    },
+    {
+      "id": "end-approved",
+      "type": "endEvent",
+      "name": "Leave Approved"
+    },
+    {
+      "id": "end-rejected",
+      "type": "endEvent",
+      "name": "Leave Rejected"
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow1",
+      "source": "start",
+      "target": "apply-leave"
+    },
+    {
+      "id": "flow2",
+      "source": "apply-leave",
+      "target": "check-days"
+    },
+    {
+      "id": "flow3",
+      "name": "<= 3 days",
+      "source": "check-days",
+      "target": "manager-approval",
+      "condition": "${leaveDays <= 3}"
+    },
+    {
+      "id": "flow4",
+      "name": "> 3 days",
+      "source": "check-days",
+      "target": "hr-approval",
+      "condition": "${leaveDays > 3}"
+    },
+    {
+      "id": "flow5",
+      "source": "manager-approval",
+      "target": "check-approval"
+    },
+    {
+      "id": "flow6",
+      "source": "hr-approval",
+      "target": "check-approval"
+    },
+    {
+      "id": "flow7",
+      "name": "Approved",
+      "source": "check-approval",
+      "target": "notify-approval",
+      "condition": "${managerApproved == true || hrApproved == true}"
+    },
+    {
+      "id": "flow8",
+      "name": "Rejected",
+      "source": "check-approval",
+      "target": "notify-rejection",
+      "condition": "${managerApproved == false || hrApproved == false}"
+    },
+    {
+      "id": "flow9",
+      "source": "notify-approval",
+      "target": "update-calendar"
+    },
+    {
+      "id": "flow10",
+      "source": "update-calendar",
+      "target": "end-approved"
+    },
+    {
+      "id": "flow11",
+      "source": "notify-rejection",
+      "target": "end-rejected"
+    }
+  ],
+  "metadata": {
+    "author": "FlowGo",
+    "createdAt": "2025-01-01T00:00:00Z",
+    "category": "HR"
+  }
+}

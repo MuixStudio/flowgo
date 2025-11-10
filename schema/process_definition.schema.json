@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FlowGo Process Definition",
+  "description": "JSON Schema for defining workflow processes in FlowGo",
+  "type": "object",
+  "required": ["id", "name", "nodes", "edges"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the process definition"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name of the process"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description of the process"
+    },
+    "version": {
+      "type": "integer",
+      "description": "Version number of the process definition",
+      "default": 1
+    },
+    "nodes": {
+      "type": "array",
+      "description": "Collection of nodes (activities, events, gateways) in the process",
+      "items": {
+        "$ref": "#/definitions/node"
+      },
+      "minItems": 1
+    },
+    "edges": {
+      "type": "array",
+      "description": "Collection of sequence flows connecting nodes",
+      "items": {
+        "$ref": "#/definitions/edge"
+      }
+    },
+    "variables": {
+      "type": "object",
+      "description": "Process-level variables and their initial values",
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata for the process",
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "node": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the node"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "startEvent",
+            "endEvent",
+            "userTask",
+            "serviceTask",
+            "scriptTask",
+            "callActivity",
+            "subProcess",
+            "exclusiveGateway",
+            "parallelGateway",
+            "inclusiveGateway",
+            "eventBasedGateway",
+            "intermediateEvent",
+            "boundaryEvent"
+          ],
+          "description": "Type of the node"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the node"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the node"
+        },
+        "properties": {
+          "type": "object",
+          "description": "Type-specific properties for the node",
+          "properties": {
+            "assignee": {
+              "type": "string",
+              "description": "User or group assigned to a user task"
+            },
+            "candidateUsers": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "List of candidate users for a user task"
+            },
+            "candidateGroups": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "List of candidate groups for a user task"
+            },
+            "dueDate": {
+              "type": "string",
+              "description": "Due date for a user task (ISO 8601 format or expression)"
+            },
+            "priority": {
+              "type": "integer",
+              "description": "Priority level for a user task"
+            },
+            "formKey": {
+              "type": "string",
+              "description": "Reference to a form definition"
+            },
+            "implementation": {
+              "type": "string",
+              "description": "Implementation class or expression for service tasks"
+            },
+            "delegateExpression": {
+              "type": "string",
+              "description": "Expression referencing a delegate for service tasks"
+            },
+            "script": {
+              "type": "string",
+              "description": "Script content for script tasks"
+            },
+            "scriptFormat": {
+              "type": "string",
+              "description": "Script language format (e.g., 'javascript', 'groovy')"
+            },
+            "calledElement": {
+              "type": "string",
+              "description": "Reference to called process for call activities"
+            },
+            "async": {
+              "type": "boolean",
+              "description": "Whether the task should be executed asynchronously",
+              "default": false
+            },
+            "retries": {
+              "type": "integer",
+              "description": "Number of retry attempts for failed async tasks",
+              "default": 3
+            },
+            "retryInterval": {
+              "type": "string",
+              "description": "Time interval between retries (duration string)"
+            },
+            "eventType": {
+              "type": "string",
+              "enum": ["message", "timer", "signal", "error", "escalation", "conditional"],
+              "description": "Type of event for intermediate/boundary events"
+            },
+            "eventDefinition": {
+              "type": "object",
+              "description": "Event-specific configuration",
+              "properties": {
+                "messageName": {"type": "string"},
+                "signalName": {"type": "string"},
+                "errorCode": {"type": "string"},
+                "timerType": {
+                  "type": "string",
+                  "enum": ["date", "duration", "cycle"]
+                },
+                "timerValue": {"type": "string"},
+                "condition": {"type": "string"}
+              }
+            },
+            "cancelActivity": {
+              "type": "boolean",
+              "description": "Whether boundary event should cancel the activity",
+              "default": true
+            }
+          },
+          "additionalProperties": true
+        },
+        "inputMappings": {
+          "type": "object",
+          "description": "Input variable mappings",
+          "additionalProperties": {"type": "string"}
+        },
+        "outputMappings": {
+          "type": "object",
+          "description": "Output variable mappings",
+          "additionalProperties": {"type": "string"}
+        },
+        "extensionElements": {
+          "type": "object",
+          "description": "Custom extension properties",
+          "additionalProperties": true
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "source", "target"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the edge"
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional name for the edge"
+        },
+        "source": {
+          "type": "string",
+          "description": "ID of the source node"
+        },
+        "target": {
+          "type": "string",
+          "description": "ID of the target node"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Conditional expression for this sequence flow"
+        },
+        "isDefault": {
+          "type": "boolean",
+          "description": "Whether this is the default flow from a gateway",
+          "default": false
+        },
+        "extensionElements": {
+          "type": "object",
+          "description": "Custom extension properties",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

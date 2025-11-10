@@ -1,61 +1,62 @@
 package flowgo
 
-type OptionFunc func(engine *Engine)
-type Engine struct {
-	name              string
-	repositoryService *RepositoryService
-	runtimeService    *RuntimeService
-	taskService       *TaskService
-	historyService    *HistoryService
-	managementService *ManagementService
-	identityService   *IdentityService
-	formService       *FormService
+import (
+	"context"
+
+	"github.com/muixstudio/flowgo/api/history"
+	"github.com/muixstudio/flowgo/api/repository"
+	"github.com/muixstudio/flowgo/api/runtime"
+	"github.com/muixstudio/flowgo/api/task"
+	"github.com/muixstudio/flowgo/internal/engine"
+)
+
+// ProcessEngine is the main entry point for the FlowGo workflow engine.
+// It provides access to all core services and manages the engine lifecycle.
+type ProcessEngine interface {
+	// GetRepositoryService returns the repository service for managing process definitions
+	GetRepositoryService() repository.Service
+
+	// GetRuntimeService returns the runtime service for managing process instances
+	GetRuntimeService() runtime.Service
+
+	// GetTaskService returns the task service for managing user tasks
+	GetTaskService() task.Service
+
+	// GetHistoryService returns the history service for querying historical data
+	GetHistoryService() history.Service
+
+	// Start initializes and starts the process engine
+	Start(ctx context.Context) error
+
+	// Stop gracefully shuts down the process engine
+	Stop(ctx context.Context) error
+
+	// GetName returns the name of this process engine
+	GetName() string
+
+	// IsRunning returns whether the engine is currently running
+	IsRunning() bool
 }
 
-func NewEngine(opts ...OptionFunc) *Engine {
-	repo := NewRepositoryService()
-	runtime := NewRuntimeService()
-	task := NewTaskService()
-	history := NewHistoryService()
-	management := NewManagementService()
-	identity := NewIdentityService()
-	form := NewFormService()
-
-	return &Engine{
-		repositoryService: repo,
-		runtimeService:    runtime,
-		taskService:       task,
-		historyService:    history,
-		managementService: management,
-		identityService:   identity,
-		formService:       form,
+// NewProcessEngine creates a new ProcessEngine with the given configuration.
+// This is the primary way to create a process engine instance.
+func NewProcessEngine(config *Configuration) (ProcessEngine, error) {
+	internalConfig := &engine.Configuration{
+		EngineName:     config.EngineName,
+		DatabaseDriver: config.DatabaseDriver,
+		DatabaseURL:    config.DatabaseURL,
+		EnableHistory:  config.EnableHistory,
+		EnableAsync:    config.EnableAsync,
+		MaxPoolSize:    config.MaxPoolSize,
+		IdleTimeout:    config.IdleTimeout,
 	}
+	return engine.NewEngine(internalConfig)
 }
 
-func (e *Engine) GetRepositoryService() *RepositoryService {
-	return e.repositoryService
-}
-
-func (e *Engine) GetRuntimeService() *RuntimeService {
-	return e.runtimeService
-}
-
-func (e *Engine) GetTaskService() *TaskService {
-	return e.taskService
-}
-
-func (e *Engine) GetHistoryService() *HistoryService {
-	return e.historyService
-}
-
-func (e *Engine) GetManagementService() *ManagementService {
-	return e.managementService
-}
-
-func (e *Engine) GetIdentityService() *IdentityService {
-	return e.identityService
-}
-
-func (e *Engine) GetFormService() *FormService {
-	return e.formService
+// NewProcessEngineBuilder creates a new builder for constructing a process engine.
+// This provides a fluent API for engine configuration.
+func NewProcessEngineBuilder() *Builder {
+	return &Builder{
+		config: DefaultConfiguration(),
+	}
 }
